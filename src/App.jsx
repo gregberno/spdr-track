@@ -146,8 +146,8 @@ function useW() {
 /* ═══ TILE ═══ */
 const Tile = ({ children, style = {}, onClick }) => (
   <div onClick={onClick} style={{
-    background: glass, border: `1px solid ${border}`, borderRadius: 16,
-    padding: 24, position: "relative", overflow: "hidden",
+    background: glass, border: `1px solid ${border}`, borderRadius: 14,
+    padding: 16, position: "relative", overflow: "hidden",
     ...style,
   }}>{children}</div>
 );
@@ -375,21 +375,21 @@ function HomeView({ dp, spark7, data, HA, goals, missions, setView, reloadMissio
 
   return <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
     {/* ═══ ROW 1 : Scores + habits (full width) ═══ */}
-    <Tile style={{ padding:dk?"24px 32px":"20px" }}>
+    <Tile style={{ padding:dk?"24px 32px":md?"20px":"14px" }}>
       {/* ─ Score row ─ */}
-      <div style={{ display:"flex", alignItems:"flex-end", gap:dk?32:16, flexWrap:"wrap", marginBottom:20 }}>
+      <div style={{ display:"flex", alignItems:"flex-end", gap:dk?32:md?16:12, flexWrap:"wrap", marginBottom:md?20:14 }}>
         <div>
-          <div style={{ fontSize:56, fontWeight:900, fontFamily:mono, lineHeight:1, color:dp.t>0?G:dp.t<0?M:"rgba(255,255,255,.08)" }}>{dp.t>0?"+":""}{dp.t}</div>
-          <div style={{ fontSize:11, color:dim, marginTop:6, textTransform:"uppercase", letterSpacing:".1em" }}>Aujourd'hui · {doneCount}/{HA.length} habitudes</div>
+          <div style={{ fontSize:md?56:40, fontWeight:900, fontFamily:mono, lineHeight:1, color:dp.t>0?G:dp.t<0?M:"rgba(255,255,255,.08)" }}>{dp.t>0?"+":""}{dp.t}</div>
+          <div style={{ fontSize:md?11:10, color:dim, marginTop:4, textTransform:"uppercase", letterSpacing:".1em" }}>Aujourd'hui · {doneCount}/{HA.length} habitudes</div>
         </div>
-        <div style={{ display:"flex", gap:dk?24:16, alignItems:"flex-end" }}>
+        <div style={{ display:"flex", gap:dk?24:12, alignItems:"flex-end" }}>
           <div>
-            <div style={{ fontSize:28, fontWeight:800, fontFamily:mono, lineHeight:1, color:wt>0?G:wt<0?M:"rgba(255,255,255,.08)" }}>{wt>0?"+":""}{wt}</div>
-            <div style={{ fontSize:10, color:dim, marginTop:4, textTransform:"uppercase", letterSpacing:".1em" }}>Semaine</div>
+            <div style={{ fontSize:md?28:20, fontWeight:800, fontFamily:mono, lineHeight:1, color:wt>0?G:wt<0?M:"rgba(255,255,255,.08)" }}>{wt>0?"+":""}{wt}</div>
+            <div style={{ fontSize:10, color:dim, marginTop:3, textTransform:"uppercase", letterSpacing:".1em" }}>Semaine</div>
           </div>
           <div>
-            <div style={{ fontSize:28, fontWeight:800, fontFamily:mono, lineHeight:1, color:at>0?G:at<0?M:"rgba(255,255,255,.08)" }}>{at>0?"+":""}{at}</div>
-            <div style={{ fontSize:10, color:dim, marginTop:4, textTransform:"uppercase", letterSpacing:".1em" }}>Total</div>
+            <div style={{ fontSize:md?28:20, fontWeight:800, fontFamily:mono, lineHeight:1, color:at>0?G:at<0?M:"rgba(255,255,255,.08)" }}>{at>0?"+":""}{at}</div>
+            <div style={{ fontSize:10, color:dim, marginTop:3, textTransform:"uppercase", letterSpacing:".1em" }}>Total</div>
           </div>
         </div>
         {md && <div style={{ flex:"1 1 0", minWidth:100, maxWidth:220, marginLeft:"auto" }}>
@@ -1144,30 +1144,31 @@ export default function App() {
     {toast && <div style={{ position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", background:"rgba(15,15,24,.95)", border:`1px solid ${border}`, backdropFilter:"blur(20px)", color:"#fff", padding:"12px 28px", borderRadius:100, fontSize:14, fontWeight:600, zIndex:100, fontFamily:mono, animation:"fi .15s ease" }}>{toast}</div>}
 
     {/* ═══ TOP BAR ═══ */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 24px", borderBottom:`1px solid ${border}`, position:"sticky", top:0, background:"rgba(6,6,16,.9)", backdropFilter:"blur(40px)", zIndex:50 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:20 }}>
-        <div style={{ fontSize:18, fontWeight:800, fontFamily:mono, letterSpacing:".06em" }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:md?"14px 24px":"10px 14px", borderBottom:`1px solid ${border}`, position:"sticky", top:0, background:"rgba(6,6,16,.9)", backdropFilter:"blur(40px)", zIndex:50 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:md?20:10 }}>
+        <div style={{ fontSize:md?18:15, fontWeight:800, fontFamily:mono, letterSpacing:".06em" }}>
           <span style={{ color:G }}>●</span> <span style={{ color:"rgba(255,255,255,.5)" }}>STRACK</span>
         </div>
-        <div style={{ display:"flex", gap:2, background:faint, borderRadius:10, padding:2 }}>
+        {/* Desktop nav */}
+        {md && <div style={{ display:"flex", gap:2, background:faint, borderRadius:10, padding:2 }}>
           {navItems.map(n => <button key={n.id} onClick={() => setView(n.id)} style={{
-            padding:"8px 18px", borderRadius:8, border:"none", fontSize:14, fontWeight:600, cursor:"pointer",
+            padding:"8px 16px", borderRadius:8, border:"none", fontSize:13, fontWeight:600, cursor:"pointer",
             background:view===n.id?"rgba(255,255,255,.08)":"transparent",
             color:view===n.id?"#fff":"rgba(255,255,255,.3)",
             fontFamily:sans, transition:"all .15s",
           }}>{n.l}</button>)}
-        </div>
+        </div>}
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:md?12:8 }}>
         {/* ─ BELL ─ */}
         <div style={{ position:"relative" }}>
-          <div onClick={() => setBellOpen(!bellOpen)} style={{ width:38, height:38, borderRadius:10, background:faint, border:`1px solid ${border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, cursor:"pointer", position:"relative", userSelect:"none" }}>
+          <div onClick={() => setBellOpen(!bellOpen)} style={{ width:36, height:36, borderRadius:10, background:faint, border:`1px solid ${border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, cursor:"pointer", position:"relative", userSelect:"none" }}>
             🔔
-            {unreadCount > 0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:18, height:18, borderRadius:9, background:"#ef4444", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, fontFamily:mono, color:"#fff", padding:"0 4px" }}>{unreadCount}</div>}
+            {unreadCount > 0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:16, height:16, borderRadius:8, background:"#ef4444", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:800, fontFamily:mono, color:"#fff", padding:"0 3px" }}>{unreadCount}</div>}
           </div>
           {bellOpen && <>
             <div onClick={() => setBellOpen(false)} style={{ position:"fixed", inset:0, zIndex:200 }} />
-            <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, width:320, maxHeight:400, overflowY:"auto", background:"#16162a", border:`1px solid ${border}`, borderRadius:16, padding:0, zIndex:201, boxShadow:"0 12px 40px rgba(0,0,0,.6)" }}>
+            <div style={{ position:"fixed", top:md?"auto":"8px", right:md?"auto":"8px", left:md?"auto":"8px", width:md?320:"auto", maxHeight:400, overflowY:"auto", background:"#16162a", border:`1px solid ${border}`, borderRadius:16, padding:0, zIndex:201, boxShadow:"0 12px 40px rgba(0,0,0,.6)", ...(md?{position:"absolute",top:"calc(100% + 8px)",right:0,left:"auto"}:{}) }}>
               <div style={{ padding:"14px 16px 10px", fontSize:13, fontWeight:700, color:dim, textTransform:"uppercase", letterSpacing:".08em", borderBottom:`1px solid ${border}` }}>Notifications</div>
               {notifs.length === 0 && <div style={{ padding:"28px 16px", textAlign:"center", fontSize:13, color:dim }}>Aucune notification</div>}
               {notifs.map(n => <div key={n.id} onClick={() => {
@@ -1192,15 +1193,25 @@ export default function App() {
           </>}
         </div>
         {/* ─ SCORE ─ */}
-        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:10, background:at>=0?"rgba(52,211,153,.06)":"rgba(248,113,113,.06)", border:`1px solid ${at>=0?"rgba(52,211,153,.12)":"rgba(248,113,113,.12)"}` }}>
-          <span style={{ fontSize:17, fontWeight:800, fontFamily:mono, color:at>=0?G:M }}>{at>0?"+":""}{at}</span>
-          <span style={{ fontSize:11, color:dim }}>total</span>
+        <div style={{ display:"flex", alignItems:"center", gap:6, padding:md?"6px 16px":"5px 10px", borderRadius:10, background:at>=0?"rgba(52,211,153,.06)":"rgba(248,113,113,.06)", border:`1px solid ${at>=0?"rgba(52,211,153,.12)":"rgba(248,113,113,.12)"}` }}>
+          <span style={{ fontSize:md?17:14, fontWeight:800, fontFamily:mono, color:at>=0?G:M }}>{at>0?"+":""}{at}</span>
+          <span style={{ fontSize:10, color:dim }}>total</span>
         </div>
       </div>
     </div>
 
+    {/* ═══ MOBILE BOTTOM NAV ═══ */}
+    {!md && <div style={{ position:"fixed", bottom:0, left:0, right:0, display:"flex", background:"rgba(6,6,16,.95)", backdropFilter:"blur(40px)", borderTop:`1px solid ${border}`, zIndex:50, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+      {navItems.map(n => <button key={n.id} onClick={() => setView(n.id)} style={{
+        flex:"0 0 auto", padding:"12px 14px", border:"none", fontSize:11, fontWeight:600, cursor:"pointer",
+        background:"transparent", color:view===n.id?"#fff":"rgba(255,255,255,.25)",
+        fontFamily:sans, transition:"color .15s", whiteSpace:"nowrap",
+        borderTop:view===n.id?`2px solid ${G}`:"2px solid transparent",
+      }}>{n.l}</button>)}
+    </div>}
+
     {/* ═══ CONTENT ═══ */}
-    <div style={{ padding:dk?"24px":md?"20px":"16px", maxWidth:1400, margin:"0 auto" }}>
+    <div style={{ padding:dk?"24px":md?"20px":"12px", paddingBottom:md?"24px":"70px", maxWidth:1400, margin:"0 auto" }}>
 
       {/* ─── HOME ─── */}
       {view === "home" && <HomeView dp={dp} spark7={spark7} data={data} HA={HA} goals={goals} missions={missions} setView={setView} reloadMissions={reloadMissions} uid={uid} dk={dk} md={md} lg={W>=1024} flash={flash} leaderboard={leaderboard} wt={wt} at={at} focusMission={focusMission} clearFocus={() => setFocusMission(null)} />}
@@ -1208,10 +1219,10 @@ export default function App() {
       {/* ─── TODAY ─── */}
       {view === "today" && <>
         {/* Score banner */}
-        <Tile style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:dk?"24px 32px":"20px 24px", marginBottom:dk?16:12, flexWrap:"wrap", gap:16 }}>
+        <Tile style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:dk?"24px 32px":md?"20px 24px":"14px", marginBottom:dk?16:12, flexWrap:"wrap", gap:md?16:12 }}>
           <div style={{ display:"flex", alignItems:"center", gap:dk?32:20 }}>
             <div>
-              <div style={{ fontSize:56, fontWeight:900, fontFamily:mono, lineHeight:1, color:dp.t>0?G:dp.t<0?M:"rgba(255,255,255,.08)" }}>{dp.t>0?"+":""}{dp.t}</div>
+              <div style={{ fontSize:md?56:36, fontWeight:900, fontFamily:mono, lineHeight:1, color:dp.t>0?G:dp.t<0?M:"rgba(255,255,255,.08)" }}>{dp.t>0?"+":""}{dp.t}</div>
               <div style={{ fontSize:12, color:dim, marginTop:4, textTransform:"uppercase", letterSpacing:".1em" }}>score du jour</div>
             </div>
             <div style={{ borderLeft:`1px solid ${border}`, paddingLeft:dk?32:20 }}>
@@ -1261,7 +1272,7 @@ export default function App() {
           </Tile>
           <Tile style={{ textAlign:"center" }}>
             <div style={{ fontSize:12, color:dim, textTransform:"uppercase", letterSpacing:".1em", marginBottom:8 }}>Score semaine</div>
-            <div style={{ fontSize:36, fontWeight:900, fontFamily:mono, color:wt>0?G:wt<0?M:"rgba(255,255,255,.08)" }}>{wt>0?"+":""}{wt}</div>
+            <div style={{ fontSize:md?36:28, fontWeight:900, fontFamily:mono, color:wt>0?G:wt<0?M:"rgba(255,255,255,.08)" }}>{wt>0?"+":""}{wt}</div>
             <div style={{ fontSize:11, color:dim, marginTop:4 }}>habitudes + missions</div>
           </Tile>
           {md && <Tile style={{ textAlign:"center" }}>
@@ -1310,8 +1321,8 @@ export default function App() {
           }}>{t.l}</button>)}
         </div>
 
-        <Tile style={{ textAlign:"center", marginBottom:16, padding:32 }}>
-          <div style={{ fontSize:64, fontWeight:900, fontFamily:mono, color:at>0?G:at<0?M:"rgba(255,255,255,.06)", lineHeight:1 }}>{at>0?"+":""}{at}</div>
+        <Tile style={{ textAlign:"center", marginBottom:16, padding:md?32:20 }}>
+          <div style={{ fontSize:md?64:40, fontWeight:900, fontFamily:mono, color:at>0?G:at<0?M:"rgba(255,255,255,.06)", lineHeight:1 }}>{at>0?"+":""}{at}</div>
           <div style={{ fontSize:14, color:dim, marginTop:10 }}>Score total · habitudes + missions</div>
         </Tile>
 
@@ -1322,7 +1333,7 @@ export default function App() {
             <div onClick={() => { const d = new Date(date); d.setMonth(d.getMonth()+1); if (d <= new Date()) setDate(d); }} style={{ cursor:"pointer", color:dim, fontSize:20, padding:"4px 12px" }}>›</div>
           </div>
           <Cal year={date.getFullYear()} month={date.getMonth()} entries={all} goals={goals} habits={HA} missions={missions} onClick={ds => setPopup(ds)} />
-          <div style={{ display:"flex", gap:20, justifyContent:"center", marginTop:24 }}>
+          <div style={{ display:"flex", gap:md?20:12, justifyContent:"center", marginTop:24, flexWrap:"wrap" }}>
             {[{c:"rgba(52,211,153,.4)",l:"≥40"},{c:"rgba(96,165,250,.35)",l:"≥20"},{c:"rgba(251,191,36,.2)",l:">0"},{c:"rgba(248,113,113,.3)",l:"<0"}].map(x => <div key={x.l} style={{ display:"flex", alignItems:"center", gap:6 }}>
               <div style={{ width:12, height:12, borderRadius:4, background:x.c }} /><span style={{ fontSize:12, color:dim, fontFamily:mono }}>{x.l}</span>
             </div>)}
