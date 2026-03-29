@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import AuthPage from "./AuthPage";
 import { loadMissions, acceptMission, refuseMission, completeMission, checkExpiredMissions, requestMission } from "./missionEngine";
 import { loadLeaderboard } from "./leaderboard";
+import { ADMIN_EMAIL, adminGetStats, adminGetUsers, adminGetUserEntries, adminGetUserMissions, adminInsertMission } from "./admin";
 
 /* ═══ UTILS ═══ */
 const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -451,7 +452,7 @@ function HomeView({ dp, spark7, data, HA, goals, missions, setView, reloadMissio
               </div>
               {isOpen && <div style={{ marginTop:10, paddingLeft:30 }}>
                 {m.description && <div style={{ fontSize:13, color:"rgba(255,255,255,.45)", marginBottom:8 }}>{m.description}</div>}
-                <div style={{ fontSize:11, fontFamily:mono, color:dim, marginBottom:10 }}>Deadline : {deadlineLabel(m)}</div>
+                {m.deadline && <div style={{ fontSize:11, fontFamily:mono, color:dim, marginBottom:10 }}>Deadline : {deadlineLabel(m)}</div>}
                 <div style={{ display:"flex", gap:8 }}>
                   <button onClick={() => doAccept(m.id)} style={btnAcc}>Accepter ✓</button>
                   <button onClick={() => doRefuse(m.id)} style={btnRef}>Refuser ✗</button>
@@ -731,6 +732,147 @@ function AccountView({ user, uid, logout, flash, md }) {
   </>;
 }
 
+/* ═══ ADMIN VIEW ═══ */
+function AdminView({ user, dk, md, flash }) {
+  const [stats, setStats] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [detail, setDetail] = useState({ entries:[], missions:[] });
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [mForm, setMForm] = useState(null);
+  const [mBusy, setMBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const [s, u] = await Promise.all([adminGetStats(), adminGetUsers()]);
+      setStats(s);
+      setUsers(u);
+    })();
+  }, []);
+
+  const selectUser = async u => {
+    setSelected(u);
+    setLoadingDetail(true);
+    setMForm(null);
+    const [entries, missions] = await Promise.all([adminGetUserEntries(u.user_id), adminGetUserMissions(u.user_id)]);
+    setDetail({ entries, missions });
+    setLoadingDetail(false);
+  };
+
+  const submitMission = async e => {
+    e.preventDefault();
+    if (!mForm?.title || !mForm?.points) return;
+    setMBusy(true);
+    const ok = await adminInsertMission(selected.user_id, mForm.title, mForm.description || "", mForm.category || "sport", mForm.emoji || "🎯", Number(mForm.points), Number(mForm.duration || 12));
+    if (ok) { flash("Mission attribuée"); setMForm(null); const m = await adminGetUserMissions(selected.user_id); setDetail(d => ({ ...d, missions: m })); }
+    else flash("⚠️ Erreur");
+    setMBusy(false);
+  };
+
+  if (user.email !== ADMIN_EMAIL) return <Tile style={{ padding:40, textAlign:"center" }}><div style={{ fontSize:18, fontWeight:700, color:M }}>Accès refusé</div></Tile>;
+
+  const iS = { width:"100%", height:40, borderRadius:10, background:faint, border:`1px solid ${border}`, padding:"0 12px", fontSize:13, color:"#fff", fontFamily:sans, outline:"none" };
+  const secLabel = { fontSize:12, color:dim, textTransform:"uppercase", letterSpacing:".1em", fontWeight:600, marginBottom:12 };
+  const statTile = (label, value, color) => <Tile style={{ textAlign:"center", padding:18 }}>
+    <div style={{ fontSize:28, fontWeight:800, fontFamily:mono, color }}>{value}</div>
+    <div style={{ fontSize:11, color:dim, marginTop:4, textTransform:"uppercase", letterSpacing:".08em" }}>{label}</div>
+  </Tile>;
+
+  return <>
+    <div style={{ fontSize:26, fontWeight:800, marginBottom:20 }}>Admin</div>
+
+    {/* ─ Stats globales ─ */}
+    {stats && <div style={{ display:"grid", gridTemplateColumns:dk?"repeat(5,1fr)":md?"repeat(3,1fr)":"repeat(2,1fr)", gap:12, marginBottom:24 }}>
+      {statTile("Utilisateurs", stats.total_users, "#fff")}
+      {statTile("Actifs 7j", stats.active_this_week, G)}
+      {statTile("Missions", stats.missions_total, "#60a5fa")}
+      {statTile("Complétées", stats.missions_completed, G)}
+      {statTile("Échouées", stats.missions_failed, M)}
+    </div>}
+
+    <div style={{ display:"grid", gridTemplateColumns:selected&&md?"1fr 1fr":"1fr", gap:16 }}>
+      {/* ─ User list ─ */}
+      <Tile style={{ padding:0, overflow:"hidden" }}>
+        <div style={{ ...secLabel, padding:"16px 20px 0" }}>Utilisateurs</div>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead><tr>
+              {["Nom","Entries 7j","Missions","Dernier login"].map(h => <th key={h} style={{ padding:"10px 14px", fontSize:11, color:dim, textTransform:"uppercase", fontWeight:600, textAlign:"left", borderBottom:`1px solid ${border}` }}>{h}</th>)}
+            </tr></thead>
+            <tbody>{users.map(u => <tr key={u.user_id} onClick={() => selectUser(u)} style={{ cursor:"pointer", background:selected?.user_id===u.user_id?"rgba(52,211,153,.06)":"transparent", transition:"background .1s" }}>
+              <td style={{ padding:"12px 14px", fontSize:14, fontWeight:600, borderBottom:`1px solid ${border}` }}>
+                {u.display_name || u.email}
+                {u.display_name && <div style={{ fontSize:11, color:dim, marginTop:2 }}>{u.email}</div>}
+              </td>
+              <td style={{ padding:"12px 14px", fontSize:14, fontFamily:mono, borderBottom:`1px solid ${border}` }}>{u.week_entries}</td>
+              <td style={{ padding:"12px 14px", fontSize:14, fontFamily:mono, borderBottom:`1px solid ${border}` }}>{u.mission_active}</td>
+              <td style={{ padding:"12px 14px", fontSize:12, color:dim, borderBottom:`1px solid ${border}` }}>{u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString("fr") : "—"}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </Tile>
+
+      {/* ─ User detail ─ */}
+      {selected && <Tile style={{ padding:"16px 20px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:18, fontWeight:700 }}>{selected.display_name || selected.email}</div>
+            {selected.display_name && <div style={{ fontSize:12, color:dim }}>{selected.email}</div>}
+          </div>
+          <div onClick={() => setSelected(null)} style={{ cursor:"pointer", color:dim, fontSize:18, padding:"4px 8px" }}>✕</div>
+        </div>
+
+        {loadingDetail ? <div style={{ textAlign:"center", padding:24, color:dim }}>Chargement...</div> : <>
+          {/* Entries 7j */}
+          <div style={secLabel}>Habitudes — 7 derniers jours</div>
+          {detail.entries.length === 0 && <div style={{ fontSize:13, color:dim, marginBottom:16 }}>Aucune entrée</div>}
+          {detail.entries.map(e => <div key={e.date} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:`1px solid ${border}`, fontSize:13 }}>
+            <span style={{ fontFamily:mono, color:dim, width:80, flexShrink:0 }}>{e.date?.slice(5)}</span>
+            <span>{e.steps?"🏃":""} {!e.fap?"🧠":""} {e.deepwork?`⚡${e.deepwork}`:""} {e.social?`🤝${e.social}`:""} {e.trainings?`💪${e.trainings}`:""} {e.approaches?`💬${e.approaches}`:""}</span>
+          </div>)}
+
+          {/* Missions */}
+          <div style={{ ...secLabel, marginTop:20 }}>Missions</div>
+          {detail.missions.length === 0 && <div style={{ fontSize:13, color:dim, marginBottom:16 }}>Aucune mission</div>}
+          {detail.missions.slice(0, 10).map(m => {
+            const sc = m.status === "completed" ? G : m.status === "failed" ? M : m.status === "accepted" ? "#60a5fa" : dim;
+            return <div key={m.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:`1px solid ${border}`, fontSize:13 }}>
+              <span style={{ fontSize:16 }}>{m.emoji || "🎯"}</span>
+              <span style={{ flex:1, color:"rgba(255,255,255,.7)" }}>{m.title}</span>
+              <span style={{ fontSize:11, fontFamily:mono, color:sc, fontWeight:600 }}>{m.status}</span>
+              <span style={{ fontSize:12, fontFamily:mono, fontWeight:700, color:sc }}>{m.points>0?"+":""}{m.points}</span>
+            </div>;
+          })}
+
+          {/* Assign mission */}
+          <div style={{ ...secLabel, marginTop:20 }}>Attribuer une mission</div>
+          {!mForm ? <button onClick={() => setMForm({ title:"", description:"", category:"sport", emoji:"🎯", points:"25", duration:"12" })} style={{ height:38, padding:"0 20px", borderRadius:10, border:`1px solid ${border}`, background:"transparent", color:dim, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:sans }}>+ Nouvelle mission</button>
+          : <form onSubmit={submitMission} style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ display:"flex", gap:8 }}>
+              <input value={mForm.emoji} onChange={e => setMForm({...mForm, emoji:e.target.value})} placeholder="Emoji" style={{ ...iS, width:50, textAlign:"center", padding:0 }} />
+              <input value={mForm.title} onChange={e => setMForm({...mForm, title:e.target.value})} placeholder="Titre" required style={{ ...iS, flex:1 }} />
+            </div>
+            <input value={mForm.description} onChange={e => setMForm({...mForm, description:e.target.value})} placeholder="Description" style={iS} />
+            <div style={{ display:"flex", gap:8 }}>
+              <select value={mForm.category} onChange={e => setMForm({...mForm, category:e.target.value})} style={{ ...iS, width:"auto" }}>
+                <option value="sport">Sport</option>
+                <option value="social">Social</option>
+                <option value="culture">Culture</option>
+              </select>
+              <input type="number" value={mForm.points} onChange={e => setMForm({...mForm, points:e.target.value})} placeholder="Pts" required min={1} style={{ ...iS, width:70, fontFamily:mono, textAlign:"center" }} />
+              <input type="number" value={mForm.duration} onChange={e => setMForm({...mForm, duration:e.target.value})} placeholder="Heures" min={1} style={{ ...iS, width:70, fontFamily:mono, textAlign:"center" }} />
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button type="submit" disabled={mBusy} style={{ height:38, padding:"0 20px", borderRadius:10, border:`1px solid rgba(52,211,153,.3)`, background:"rgba(52,211,153,.15)", color:G, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:mono }}>{mBusy?"...":"Attribuer"}</button>
+              <button type="button" onClick={() => setMForm(null)} style={{ height:38, padding:"0 16px", borderRadius:10, border:`1px solid ${border}`, background:"transparent", color:dim, fontSize:13, cursor:"pointer", fontFamily:sans }}>Annuler</button>
+            </div>
+          </form>}
+        </>}
+      </Tile>}
+    </div>
+  </>;
+}
+
 /* ═══ MAIN APP ═══ */
 export default function App() {
   const [user, setUser] = useState(null);
@@ -788,6 +930,34 @@ export default function App() {
       } catch(e) { console.error("LOAD CRASH:", e); }
       setLoading(false);
     })();
+  }, [uid]);
+
+  /* ─ Realtime subscriptions ─ */
+  useEffect(() => {
+    if (!uid) return;
+    const ch = supabase.channel(`sync_${uid}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_entries", filter: `user_id=eq.${uid}` }, payload => {
+        if (payload.eventType === "DELETE") {
+          const key = normDate(payload.old.date);
+          setAll(prev => { const next = { ...prev }; delete next[key]; return next; });
+        } else {
+          const r = payload.new;
+          const cd = r.custom_data || {};
+          const key = normDate(r.date);
+          setAll(prev => ({ ...prev, [key]: { ...r, ...cd, date: key } }));
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "missions", filter: `user_id=eq.${uid}` }, payload => {
+        if (payload.eventType === "DELETE") {
+          setMissions(prev => prev.filter(m => m.id !== payload.old.id));
+        } else if (payload.eventType === "INSERT") {
+          setMissions(prev => prev.some(m => m.id === payload.new.id) ? prev : [payload.new, ...prev]);
+        } else {
+          setMissions(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [uid]);
 
   const reloadMissions = useCallback(async () => {
@@ -937,6 +1107,7 @@ export default function App() {
     <div style={{ width:24, height:24, border:"2px solid rgba(255,255,255,.1)", borderTop:`2px solid ${G}`, borderRadius:"50%", animation:"spin 1s linear infinite" }} />
   </div>;
 
+  const isAdmin = user.email === ADMIN_EMAIL;
   const navItems = [
     { id:"home", l:"Home" },
     { id:"today", l:"Jour" },
@@ -945,6 +1116,7 @@ export default function App() {
     { id:"missions", l:"Missions" },
     { id:"goals", l:"Config" },
     { id:"account", l:"Compte" },
+    ...(isAdmin ? [{ id:"admin", l:"Admin" }] : []),
   ];
 
   const inputStyle = { height:44, borderRadius:12, background:faint, border:`1px solid ${border}`, padding:"0 12px", fontSize:14, color:"#fff", fontFamily:sans, outline:"none" };
@@ -1000,9 +1172,9 @@ export default function App() {
               {notifs.length === 0 && <div style={{ padding:"28px 16px", textAlign:"center", fontSize:13, color:dim }}>Aucune notification</div>}
               {notifs.map(n => <div key={n.id} onClick={() => {
                 const m = missions.find(x => x.id === n.missionId);
-                const target = m && m.status === "proposed" ? "home" : "missions";
-                setView(target);
-                setFocusMission(n.missionId);
+                const isProposed = m && m.status === "proposed";
+                setView(isProposed ? "home" : "missions");
+                if (isProposed) setFocusMission(n.missionId);
                 setBellOpen(false);
                 updateReadIds(new Set([...readIds, n.id]));
               }} style={{ padding:"12px 16px", borderBottom:`1px solid ${border}`, cursor:"pointer", background:readIds.has(n.id)?"transparent":"rgba(52,211,153,.03)", transition:"background .1s" }}>
@@ -1272,6 +1444,9 @@ export default function App() {
 
       {/* ─── ACCOUNT ─── */}
       {view === "account" && <AccountView user={user} uid={uid} logout={logout} flash={flash} md={md} />}
+
+      {/* ─── ADMIN ─── */}
+      {view === "admin" && <AdminView user={user} dk={dk} md={md} flash={flash} />}
 
       <div style={{ height:40 }} />
     </div>
